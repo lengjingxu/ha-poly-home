@@ -1,0 +1,54 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "保利智家本地网关",
+        "description": "填写从保利智家 App 提取的凭据，凭据只保存在 Home Assistant 配置目录中。",
+        "data": {
+          "gateway_host": "网关地址（IP:端口）",
+          "host_sn": "网关序列号 host_sn",
+          "si": "App 标识 si",
+          "login_token": "登录令牌 login_token",
+          "user_unique": "用户标识 user_unique",
+          "app_key": "app_key",
+          "app_secret": "app_secret"
+        }
+      },
+      "reauth_confirm": {
+        "title": "重新认证网关",
+        "description": "login_token 已失效，请在保利智家 App 重新登录后重新提取。",
+        "data": {
+          "login_token": "登录令牌 login_token"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "连接网关失败",
+      "invalid_auth": "凭据被网关拒绝"
+    },
+    "abort": {
+      "already_configured": "该网关已配置",
+      "reauth_successful": "重新认证成功"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "保利智家本地网关",
+        "data": {
+          "gateway_host": "网关地址（IP:端口）",
+          "host_sn": "网关序列号 host_sn",
+          "si": "App 标识 si",
+          "login_token": "登录令牌 login_token",
+          "user_unique": "用户标识 user_unique",
+          "app_key": "app_key",
+          "app_secret": "app_secret"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "连接网关失败",
+      "invalid_auth": "凭据被网关拒绝"
+    }
+  }
+}

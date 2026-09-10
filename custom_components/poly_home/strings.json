@@ -1,0 +1,54 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Poly Smart Home gateway",
+        "description": "Credentials are read from the Poly Smart Home App and stored in the Home Assistant config directory.",
+        "data": {
+          "gateway_host": "Gateway address (IP:port)",
+          "host_sn": "Gateway serial (host_sn)",
+          "si": "App identifier (si)",
+          "login_token": "Login token",
+          "user_unique": "User unique id",
+          "app_key": "app_key",
+          "app_secret": "app_secret"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate gateway",
+        "description": "The login token expired. Sign in again in the App and extract a new token.",
+        "data": {
+          "login_token": "Login token"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the gateway",
+      "invalid_auth": "The gateway rejected the credentials"
+    },
+    "abort": {
+      "already_configured": "This gateway is already configured",
+      "reauth_successful": "Reauthentication was successful"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Poly Smart Home gateway",
+        "data": {
+          "gateway_host": "Gateway address (IP:port)",
+          "host_sn": "Gateway serial (host_sn)",
+          "si": "App identifier (si)",
+          "login_token": "Login token",
+          "user_unique": "User unique id",
+          "app_key": "app_key",
+          "app_secret": "app_secret"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the gateway",
+      "invalid_auth": "The gateway rejected the credentials"
+    }
+  }
+}
