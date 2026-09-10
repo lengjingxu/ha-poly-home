@@ -23,25 +23,17 @@ HACS：HACS → 集成 → 右上角菜单 → 自定义存储库 → 填本仓�
 
 ## 配置
 
-添加集成「保利智家本地网关」，填入以下字段：
+添加集成「保利智家本地网关」，用保利智家 App 绑定的手机号登录：
 
-| 字段 | 说明 |
-| --- | --- |
-| `gateway_host` | 网关局域网地址，形如 `192.168.1.2:1883` |
-| `host_sn` | 网关序列号 |
-| `si` | App 设备标识 |
-| `login_token` | 云端签发的登录令牌 |
-| `user_unique` | 用户标识 |
-| `app_key` | App 级常量 |
-| `app_secret` | App 级常量 |
+1. 填手机号，保利云下发短信验证码。
+2. 填验证码，从账号下的家庭里选一个。
+3. 集成连一次该家庭的网关，登录成功才保存。
 
-前五项是用户级凭据，从保利智家 App 的 SharedPreferences 里读。手机或模拟器登录 App 后：
+凭据由集成自己从保利云取：登录后注册一个 App 标识 `si`，再从家庭列表拿到网关序列号和局域网地址。
+不需要装 App、模拟器或 adb，仓库里没有作者的账号数据。
 
-```bash
-python3 scripts/extract_credentials.py            # 需要 adb 与 root，多设备时加 --serial
-```
-
-本仓库不包含云端的手机号验证码登录流程，凭据全部由上面的脚本从已登录的 App 本地读取，仓库里没有作者的账号数据。
+第一步也可以选「手动填写凭据」，直接填 `gateway_host`、`host_sn`、`si`、`login_token`、`user_unique`，
+这些值来自保利智家 App 的 SharedPreferences。
 
 `app_key` 与 `app_secret` 是 App 级常量，所有用户相同，来自 APK 逆向，取值过程见 `docs/PROTOCOL.md`。
 
@@ -57,7 +49,8 @@ python3 scripts/extract_credentials.py            # 需要 adb 与 root，多设
 
 ## 已知限制
 
-- `login_token` 由云端签发，过期后网关会拒绝登录；HA 会提示重新认证，重新提取填一次即可。
+- 网关不校验 `login_token`，实测空值也能 `localLogin`；凭据配好之后不会自己过期。
+- 网关只放行云端注册过的 `si`。账号的局域网登录设备数有上限，占满后新 `si` 会被拒绝（`280302`），需要先在 App 的登录设备管理里删掉不用的设备。
 - 场景执行（`smartExecution`）的 payload 未经过抓包验证，集成没有实现。
 - 网关协议没有 TLS，也没有逐请求鉴权，拿到凭据的人都能控制设备，只应在可信局域网里使用。
 

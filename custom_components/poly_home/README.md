@@ -17,12 +17,14 @@
 
 ## 配置字段
 
+添加集成时用手机号 + 短信验证码登录，家庭和网关地址自动带出；也可以手动填写下表。
+
 | 字段 | 来源 |
 | --- | --- |
 | `gateway_host` | 网关局域网地址，形如 `192.168.1.2:1883` |
 | `host_sn` | 网关序列号 |
-| `si` | App 设备标识 |
-| `login_token` | 云端签发的登录令牌，会过期 |
+| `si` | 云端 `backdevice.si.register` 签发的设备标识 |
+| `login_token` | 云端 `app.login.verifyCode` 返回的登录令牌 |
 | `user_unique` | 用户标识 |
 | `app_key` | App 级常量 |
 | `app_secret` | App 级常量，从 APK 逆向所得 |
@@ -31,7 +33,7 @@
 
 - 状态每 30 秒查询一次网关；下发控制后先本地更新，2 秒后再查一次覆盖。
 - MQTT 断线由 paho 自动重连，重连后自动补一次 `localLogin`。
-- `login_token` 过期后网关会拒绝登录，HA 提示重新认证，只需填新的 token。
+- 网关不校验 `login_token`，凭据配好后不会过期；网关只放行云端注册过的 `si`。
 - 所有阻塞调用都走 executor 线程，不占用事件循环。
 
 ## 注意

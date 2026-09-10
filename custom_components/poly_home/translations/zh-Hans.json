@@ -2,8 +2,35 @@
   "config": {
     "step": {
       "user": {
-        "title": "保利智家本地网关",
-        "description": "填写从保利智家 App 提取的凭据，凭据只保存在 Home Assistant 配置目录中。",
+        "title": "保利智家本地网关"
+      },
+      "phone": {
+        "title": "手机号登录",
+        "description": "保利云会给这个号码发送登录验证码。",
+        "data": {
+          "phone": "手机号"
+        }
+      },
+      "verify": {
+        "title": "输入验证码",
+        "description": "验证码已发送到 {phone}。",
+        "data": {
+          "verify_code": "短信验证码"
+        }
+      },
+      "home": {
+        "title": "选择家庭",
+        "data": {
+          "host_sn": "家庭"
+        }
+      },
+      "confirm": {
+        "title": "添加网关",
+        "description": "将连接「{home}」的网关 {gateway}，凭据保存在 Home Assistant 配置目录。"
+      },
+      "manual": {
+        "title": "手动填写凭据",
+        "description": "填写从保利智家 App 读到的凭据，凭据只保存在 Home Assistant 配置目录中。",
         "data": {
           "gateway_host": "网关地址（IP:端口）",
           "host_sn": "网关序列号 host_sn",
@@ -16,19 +43,31 @@
       },
       "reauth_confirm": {
         "title": "重新认证网关",
-        "description": "login_token 已失效，请在保利智家 App 重新登录后重新提取。",
+        "description": "检查凭据后重试。",
         "data": {
-          "login_token": "登录令牌 login_token"
+          "gateway_host": "网关地址（IP:端口）",
+          "host_sn": "网关序列号 host_sn",
+          "si": "App 标识 si",
+          "login_token": "登录令牌 login_token",
+          "user_unique": "用户标识 user_unique",
+          "app_key": "app_key",
+          "app_secret": "app_secret"
         }
       }
     },
     "error": {
       "cannot_connect": "连接网关失败",
-      "invalid_auth": "凭据被网关拒绝"
+      "invalid_auth": "凭据被网关拒绝",
+      "login_limit": "账号的网关局域网登录设备数已达上限",
+      "cannot_send_code": "下发验证码失败",
+      "invalid_code": "验证码有误或已过期",
+      "cannot_connect_cloud": "连接保利云失败",
+      "send_limit": "验证码获取次数已达上限，请稍后再试"
     },
     "abort": {
       "already_configured": "该网关已配置",
-      "reauth_successful": "重新认证成功"
+      "reauth_successful": "重新认证成功",
+      "no_home": "该账号下没有可添加的家庭"
     }
   },
   "options": {
@@ -48,7 +87,8 @@
     },
     "error": {
       "cannot_connect": "连接网关失败",
-      "invalid_auth": "凭据被网关拒绝"
+      "invalid_auth": "凭据被网关拒绝",
+      "login_limit": "账号的网关局域网登录设备数已达上限"
     }
   }
 }
