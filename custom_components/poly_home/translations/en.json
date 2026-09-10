@@ -2,8 +2,35 @@
   "config": {
     "step": {
       "user": {
-        "title": "Poly Smart Home gateway",
-        "description": "Credentials are read from the Poly Smart Home App and stored in the Home Assistant config directory.",
+        "title": "Poly Smart Home gateway"
+      },
+      "phone": {
+        "title": "Sign in with phone number",
+        "description": "The Poly cloud sends a login code to this number.",
+        "data": {
+          "phone": "Phone number"
+        }
+      },
+      "verify": {
+        "title": "Enter the verification code",
+        "description": "A code was sent to {phone}.",
+        "data": {
+          "verify_code": "Verification code"
+        }
+      },
+      "home": {
+        "title": "Choose a home",
+        "data": {
+          "host_sn": "Home"
+        }
+      },
+      "confirm": {
+        "title": "Add gateway",
+        "description": "Connect to {home} at {gateway} and store the credentials."
+      },
+      "manual": {
+        "title": "Enter credentials manually",
+        "description": "Credentials read from the Poly Smart Home App.",
         "data": {
           "gateway_host": "Gateway address (IP:port)",
           "host_sn": "Gateway serial (host_sn)",
@@ -16,19 +43,31 @@
       },
       "reauth_confirm": {
         "title": "Reauthenticate gateway",
-        "description": "The login token expired. Sign in again in the App and extract a new token.",
+        "description": "Check the credentials and try again.",
         "data": {
-          "login_token": "Login token"
+          "gateway_host": "Gateway address (IP:port)",
+          "host_sn": "Gateway serial (host_sn)",
+          "si": "App identifier (si)",
+          "login_token": "Login token",
+          "user_unique": "User unique id",
+          "app_key": "app_key",
+          "app_secret": "app_secret"
         }
       }
     },
     "error": {
       "cannot_connect": "Could not reach the gateway",
-      "invalid_auth": "The gateway rejected the credentials"
+      "invalid_auth": "The gateway rejected the credentials",
+      "login_limit": "The account has reached the gateway's LAN login device limit",
+      "cannot_send_code": "Could not send the verification code",
+      "invalid_code": "The verification code is wrong or expired",
+      "cannot_connect_cloud": "Could not reach the Poly cloud",
+      "send_limit": "Too many verification code requests, try again later"
     },
     "abort": {
       "already_configured": "This gateway is already configured",
-      "reauth_successful": "Reauthentication was successful"
+      "reauth_successful": "Reauthentication was successful",
+      "no_home": "This account has no home to add"
     }
   },
   "options": {
@@ -48,7 +87,8 @@
     },
     "error": {
       "cannot_connect": "Could not reach the gateway",
-      "invalid_auth": "The gateway rejected the credentials"
+      "invalid_auth": "The gateway rejected the credentials",
+      "login_limit": "The account has reached the gateway's LAN login device limit"
     }
   }
 }

@@ -25,12 +25,12 @@ Home Assistant ──MQTT 1883──> 中控网关(192.168.1.x)
 | `app_key` | `0e71bdeec1089eff` | App 级常量（APK 字符串，所有用户相同） |
 | `app_secret` | `a327414670fffdea655ec4b988988ec7` | App 级常量，native `libuiot_screen_click.so` 运行时解密；取法：root 设备 Frida 执行 `Java.use('cc.a').a()` |
 | `oem` | `0X8601` | App 级常量 |
-| `login_token` | App 登录后写入 SharedPreferences `login_token`（32 位 hex） | 用户级，会过期，过期需在 App 重新登录后重取 |
+| `login_token` | 云端 `app.login.verifyCode` 返回的 `token`（32 位 hex，12 小时有效） | 用户级；网关不校验，空值也能 `localLogin` |
 | `host_sn` | SharedPreferences `host_sn`（网关序列号） | 用户级 |
-| `si` | SharedPreferences `APP_SI`（App 设备标识） | 用户级 |
+| `si` | `backdevice.si.register` 返回的 16 位 hex（App 首次启动时先本地生成 `android` + md5(uuid)[:16] 再注册） | 用户级，网关只放行注册过的值 |
 | `user_unique` | SharedPreferences `uniqkey` | 用户级 |
 
-提取脚本：`scripts/extract_credentials.py`（adb root 读取 SharedPreferences，输出 `config.json`）。
+获取方式：集成内置的手机号 + 验证码登录（`custom_components/poly_home/cloud_login.py`），见 §10。
 
 ## 3. MQTT 连接认证
 
@@ -158,29 +158,42 @@ gw.control_device(9, {"powerSwitch": "on"})  # 开客厅灯带
 
 ## 9. 边界与风险
 
-- `login_token` 由云端签发，过期后必须用 App 重新登录刷新；账号密码直登接口未验证。
+- `login_token` 由云端签发，12 小时有效，但网关不校验它，凭据不会自己过期。
 - 场景执行（`smartExecution`）payload 未抓包验证，当前只读不开放。
 - 网关无 TLS、无每请求鉴权，局域网内任何拿到凭据者均可控制——服务务必只绑 127.0.0.1。
 
-## 10. 云端登录 bootstrap（手机号+验证码）实测边界
+## 10. 云端登录（手机号 + 验证码）实测
 
-目标：页面输手机号+验证码即可完成 bootstrap，无需从 App 提取凭据。
-脚本 `cloud_login.py`（同进程全链 + cookie jar 每步持久化）。
+集成 `cloud_login.py` 用这套接口完成 bootstrap，全程不经过 App。
+所有请求都是 `POST https://polysh.unisiot.com/gateway`，用 App 的加密信封。
 
-**已验证（2026-08-12 实测）**
-- Web 登录流程（登录页 JS 逆向）：`sendMsg`(JSON) → `checkCode`(JSON,会话级)
-  → `getUserSnNew`(form) → `login.do`(form 复合 username) → 302 授权码 → `token`。
-- `sendMsg` 真实下发验证码（`code:0`）；`checkCode` 校验通过（`code:0`）。
-- 密码直登不通：`getUserSnNew` 带密码返回 `130104 用户名密码错误`。
+### 10.1 信封
 
-**未验证（候选方向，不得当作已通）**
-- `checkCode` 成功后 `getUserSnNew` 尚未在同会话实测返回 `snList`
-  （snList 结构仅来自 Web JS 读取）→ host_sn 云端发现**未验证**。
-- `PPAQ…/u4rm…` 来自 APK 京东第三方绑定流程（`tpp.oauth.saveJdToken`），
-  仅作 token 交换候选之一，**不是已验证的主登录 OAuth 凭据**。
-- `access_token` 能否当 MQTT `login_token` 未验证；`userUnique` 来源未验证。
-- `si`：App 用 AndroidId/自生成标识，服务端自生成+持久化为候选方案。
-- 网关 LAN IP：App 用 mDNS `_smart._tcp`（NsdHelper.kt）；不在同网时手动 IP 兜底。
+```
+header : method / tid(=si) / nonce=11111 / appkey / timestamp(ms) / signType=md5
+         version=1.0 / isEncrypt=true / encryptType=AES，登录后带 token
+sign   : md5(按 key 字典序拼 "k=v&k2=v2..." + app_secret)，小写 hex
+data   : base64(hex(AES-256-ECB(json)))，AES key = app_secret 原文 32 字节
+```
 
-**结论**：账号+验证码输入本身尚不能完成控制 bootstrap；
-必须同会话实测到 `login.do` 原始跳转并确认 token 链后，才集成页面登录。
+- `app_key` = `0e71bdeec1089eff`，`app_secret` = `a327414670fffdea655ec4b988988ec7`。
+- 响应 `data` 是字符串，解码：`unpad(AES-256-ECB-decode(unhex(base64decode(data))))`。
+- **GET 的 `data` 直接用 `hex(...)`，不套 base64**，套了会返回 `300107 [解密异常]`。
+  目前只有 `smallSmarthome.home.listHomeSn` 走 GET，其余都是 POST。
+
+### 10.2 接口
+
+| 接口 | 入参 | 返回 |
+|------|------|------|
+| `app.user.verifyCode` | `areaCode=86`, `username`, `oemFirm=0X8601`, `type=login` | 空，短信下发验证码 |
+| `app.login.verifyCode` | `areaCode`, `username`, `verifyCode`, `si`, `locations`, `loginAddress`, `appLanguage`, `oemFirm`, `appModel` | `token`、`userUnique`、`username`、`expiresIn` |
+| `backdevice.si.register` | `appDevice`、`appImei`、`appMac`、`appModel`、`appPackage`、`appSys`、`appVer`、`sysVer`、`clientType`、`oemFirm`、`resolvingPower` | `si` |
+| `smallSmarthome.home.listHomeSn` | `token`、`appType=tgwApp`（GET） | 家庭列表，含 `sn`、`homeId`、`homeName`、`hostLanIp` |
+
+### 10.3 实测边界
+
+- 验证码一次性、几分钟内有效：`280103` 过期、`280104` 有误，重发后立刻用。
+- 局域网 MQTT 端口固定 1883，网关地址取家庭列表里的 `hostLanIp`。
+- 网关按账号限制局域网登录设备数，占满后新 `si` 返回 `280302 用户局域网登录主机已达到最大限制`；
+  同一个 `si` 确定后要一直复用，不要每次请求换新值。
+- 网关只校验 `userUnique`（换随机值返回 `280123 用户名不存在`），不校验 `login_token`。

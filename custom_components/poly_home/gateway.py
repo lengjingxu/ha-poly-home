@@ -14,7 +14,7 @@ from typing import Any
 
 import paho.mqtt.client as mqtt
 
-from .const import AUTH_ERROR_CODE
+from .const import AUTH_ERROR_CODE, LOGIN_LIMIT_ERROR_CODE
 from .protocol import (
     UiotConfig,
     build_login_payload,
@@ -35,6 +35,10 @@ class GatewayUnreachable(Exception):
 
 class GatewayAuthFailed(Exception):
     """凭据被网关拒绝。"""
+
+
+class GatewayLoginLimit(GatewayAuthFailed):
+    """账号的局域网登录设备数已达上限。"""
 
 
 class GatewayClient:
@@ -87,6 +91,9 @@ class GatewayClient:
         if resp is None:
             self.logged_in = False
             raise GatewayUnreachable("localLogin 无响应")
+        if resp.get("code") == LOGIN_LIMIT_ERROR_CODE:
+            self.logged_in = False
+            raise GatewayLoginLimit(f"localLogin 被拒: desc={resp.get('desc')}")
         if resp.get("code") != 0:
             self.logged_in = False
             raise GatewayAuthFailed(
