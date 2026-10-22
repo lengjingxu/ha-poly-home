@@ -17,7 +17,7 @@ from homeassistant.exceptions import (
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DOMAIN, POLL_INTERVAL_SECONDS
-from .gateway import GatewayAuthFailed, GatewayClient, GatewayUnreachable
+from .gateway import GatewayAuthFailed, GatewayClient, GatewayRejected, GatewayUnreachable
 from .protocol import UiotConfig
 
 _LOGGER = logging.getLogger(__name__)
@@ -57,7 +57,8 @@ class PolyCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
             return await self.hass.async_add_executor_job(self.gateway.get_devices)
         except GatewayAuthFailed as err:
             raise ConfigEntryAuthFailed(str(err)) from err
-        except GatewayUnreachable as err:
+        except (GatewayUnreachable, GatewayRejected) as err:
+            # A refused read is still a failed refresh: keep the last state and try again next cycle.
             raise UpdateFailed(str(err)) from err
 
     async def async_control(self, device_id: int, properties: dict[str, Any]) -> None:
@@ -66,6 +67,10 @@ class PolyCoordinator(DataUpdateCoordinator[dict[int, dict[str, Any]]]):
             await self.hass.async_add_executor_job(
                 self.gateway.control_device, device_id, properties
             )
+        except GatewayRejected as err:
+            # The gateway is up and answered; it would not do this one thing. Keep the message about
+            # the device, not about the connection, and leave the coordinator's state alone.
+            raise HomeAssistantError(f"保利智家控制失败: {err}") from err
         except (GatewayAuthFailed, GatewayUnreachable) as err:
             raise HomeAssistantError(f"保利智家控制失败: {err}") from err
         data = dict(self.data or {})

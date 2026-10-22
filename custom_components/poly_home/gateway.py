@@ -41,6 +41,14 @@ class GatewayLoginLimit(GatewayAuthFailed):
     """账号的局域网登录设备数已达上限。"""
 
 
+class GatewayRejected(Exception):
+    """网关收到了请求但拒绝执行（设备离线、设备自己没应答、参数不被接受）。"""
+
+    def __init__(self, message: str, code: int) -> None:
+        super().__init__(message)
+        self.code = code
+
+
 class GatewayClient:
     def __init__(self, config: UiotConfig, client_suffix: str = '') -> None:
         self.client_id = 'poly_home_' + config.si + client_suffix
@@ -178,7 +186,10 @@ class GatewayClient:
         if code == AUTH_ERROR_CODE:
             raise GatewayAuthFailed(f"网关会话失效: code={code}")
         if code != 0:
-            raise GatewayUnreachable(f"网关返回失败: code={code} desc={resp.get('desc')}")
+            # A refusal is not a lost connection: the gateway answered, it just would not carry the
+            # request out. Reporting it as "unreachable" made the UI blame the network (and skipped
+            # the retry-on-reconnect path) for things like setting a temperature on an AC that is off.
+            raise GatewayRejected(f"网关拒绝执行: code={code} desc={resp.get('desc')}", code)
         return resp.get("data") or {}
 
     # ---------- 业务接口 ----------

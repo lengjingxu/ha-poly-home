@@ -87,6 +87,11 @@ class PolyClimate(PolyEntity, ClimateEntity):
         temperature = kwargs.get(ATTR_TEMPERATURE)
         if temperature is None:
             return
+        if self._props.get("powerSwitch") != "on":
+            # The gateway answers 460001 (timeout) to a targetTemperature on a unit that is off, and
+            # it refuses power-on plus set point in one command too: the indoor unit only takes a set
+            # point once it is running. Start it, then send the temperature.
+            await self.async_set_hvac_mode(HVACMode.COOL)
         await self.coordinator.async_control(
             self._device_id, {"targetTemperature": str(round(temperature))}
         )
