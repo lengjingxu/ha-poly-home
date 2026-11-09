@@ -120,12 +120,16 @@ def _call(method: str, params: dict[str, Any], session_id: str, token: str = "")
     return data or {}
 
 
-def send_code(phone: str) -> None:
-    """给手机号发登录验证码。"""
+def send_code(phone: str, session_id: str = "") -> None:
+    """给手机号发登录验证码。
+
+    云端把验证码绑定在发码请求的 tid（si）上，登录时必须用同一个 si，
+    所以调用方要先 register_session 再把返回的 si 传进来。
+    """
     _call(
         "app.user.verifyCode",
         {"areaCode": AREA_CODE, "username": phone, "oemFirm": DEFAULT_OEM_FIRM, "type": "login"},
-        new_session_id(),
+        session_id or new_session_id(),
     )
 
 
@@ -179,6 +183,8 @@ def list_homes(token: str, session_id: str) -> list[dict[str, Any]]:
         session_id,
         token,
     )
-    return data if isinstance(data, list) else data.get("homeList") or []
+    if isinstance(data, list):
+        return data
+    return data.get("homeSnList") or data.get("homeList") or []
 
 

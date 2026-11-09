@@ -106,9 +106,12 @@ async def _async_verify(
 
 
 def _bootstrap(phone: str, code: str, session_id: str) -> dict[str, Any]:
-    """注册 si，用验证码换登录态，取家庭列表。"""
-    si = register_session(session_id)
-    account = login(phone, code, si)
+    """用验证码换登录态，取家庭列表。
+
+    session_id 必须是已注册的云端 si，且和发码时用的相同——
+    云端把验证码绑定在发码请求的 tid 上。
+    """
+    account = login(phone, code, session_id)
     token = account.get("token")
     user_unique = account.get("userUnique")
     if not token or not user_unique:
@@ -117,8 +120,8 @@ def _bootstrap(phone: str, code: str, session_id: str) -> dict[str, Any]:
     return {
         "token": token,
         "user_unique": user_unique,
-        "si": si,
-        "homes": list_homes(token, si),
+        "si": session_id,
+        "homes": list_homes(token, session_id),
     }
 
 
@@ -142,9 +145,12 @@ class PolyHomeConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             phone = user_input[CONF_PHONE].strip()
-            self._session_id = new_session_id()
             try:
-                await self.hass.async_add_executor_job(send_code, phone)
+                # 先注册云端 si，发码和登录都要用它（验证码绑定在 si 上）
+                self._session_id = await self.hass.async_add_executor_job(
+                    register_session, new_session_id()
+                )
+                await self.hass.async_add_executor_job(send_code, phone, self._session_id)
             except CloudError as err:
                 _LOGGER.warning("保利云下发验证码失败: %s", err)
                 errors["base"] = (

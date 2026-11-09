@@ -1,7 +1,7 @@
 {
   "domain": "poly_home",
   "name": "保利智家本地网关",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "config_flow": true,
   "integration_type": "hub",
   "iot_class": "local_polling",
