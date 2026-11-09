@@ -84,14 +84,20 @@ def _call(method: str, params: dict[str, Any], session_id: str, token: str = "")
     signing = "&".join(f"{name}={headers[name]}" for name in sorted(headers))
     headers["sign"] = hashlib.md5((signing + DEFAULT_APP_SECRET).encode()).hexdigest()
 
-    if query:
-        response = requests.get(
-            GATEWAY_URL, params=headers, headers={"method": method}, timeout=TIMEOUT
-        )
-    else:
-        body = headers.pop("data")
-        headers["Content-Type"] = "application/json; charset=utf-8"
-        response = requests.post(GATEWAY_URL, headers=headers, data=body.encode(), timeout=TIMEOUT)
+    try:
+        if query:
+            response = requests.get(
+                GATEWAY_URL, params=headers, headers={"method": method}, timeout=TIMEOUT
+            )
+        else:
+            body = headers.pop("data")
+            headers["Content-Type"] = "application/json; charset=utf-8"
+            response = requests.post(
+                GATEWAY_URL, headers=headers, data=body.encode(), timeout=TIMEOUT
+            )
+    except requests.RequestException as err:
+        # 系统代理拦截/断网都会走到这里；不包装的话 config_flow 会显示 unknown error
+        raise CloudError(f"无法连接保利云: {err}") from err
 
     try:
         payload = response.json()
@@ -106,7 +112,11 @@ def _call(method: str, params: dict[str, Any], session_id: str, token: str = "")
         try:
             return _decrypt(data)
         except Exception:
-            return {}
+            # 个别接口的 data 可能是未加密的 JSON 字符串
+            try:
+                return json.loads(data)
+            except ValueError as err:
+                raise CloudError("云端响应解密失败") from err
     return data or {}
 
 

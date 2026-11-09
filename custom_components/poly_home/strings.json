@@ -2,7 +2,11 @@
   "config": {
     "step": {
       "user": {
-        "title": "Poly Smart Home gateway"
+        "title": "Poly Smart Home gateway",
+        "menu_options": {
+          "phone": "Sign in with phone number",
+          "manual": "Enter credentials manually"
+        }
       },
       "phone": {
         "title": "Sign in with phone number",
@@ -62,7 +66,9 @@
       "cannot_send_code": "Could not send the verification code",
       "invalid_code": "The verification code is wrong or expired",
       "cannot_connect_cloud": "Could not reach the Poly cloud",
-      "send_limit": "Too many verification code requests, try again later"
+      "send_limit": "Too many verification code requests, try again later",
+      "gateway_rejected": "The gateway connected but refused the request",
+      "unknown": "Unexpected error, check the Home Assistant logs for details"
     },
     "abort": {
       "already_configured": "This gateway is already configured",
@@ -88,7 +94,9 @@
     "error": {
       "cannot_connect": "Could not reach the gateway",
       "invalid_auth": "The gateway rejected the credentials",
-      "login_limit": "The account has reached the gateway's LAN login device limit"
+      "login_limit": "The account has reached the gateway's LAN login device limit",
+      "gateway_rejected": "The gateway connected but refused the request",
+      "unknown": "Unexpected error, check the Home Assistant logs for details"
     }
   }
 }

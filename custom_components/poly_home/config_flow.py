@@ -42,6 +42,7 @@ from .gateway import (
     GatewayAuthFailed,
     GatewayClient,
     GatewayLoginLimit,
+    GatewayRejected,
     GatewayUnreachable,
 )
 from .protocol import UiotConfig
@@ -97,6 +98,8 @@ async def _async_verify(
         return "", {"base": "login_limit"}
     except GatewayAuthFailed:
         return "", {"base": "invalid_auth"}
+    except GatewayRejected:
+        return "", {"base": "gateway_rejected"}
     except GatewayUnreachable:
         return "", {"base": "cannot_connect"}
     return home, {}
@@ -106,10 +109,14 @@ def _bootstrap(phone: str, code: str, session_id: str) -> dict[str, Any]:
     """注册 si，用验证码换登录态，取家庭列表。"""
     si = register_session(session_id)
     account = login(phone, code, si)
-    token = account["token"]
+    token = account.get("token")
+    user_unique = account.get("userUnique")
+    if not token or not user_unique:
+        # 登录成功但响应字段缺失，直接 KeyError 会变成 unknown error
+        raise CloudError(f"登录响应缺少 token/userUnique: {list(account)}")
     return {
         "token": token,
-        "user_unique": account["userUnique"],
+        "user_unique": user_unique,
         "si": si,
         "homes": list_homes(token, si),
     }
@@ -143,6 +150,9 @@ class PolyHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = (
                     "send_limit" if err.code == CODE_SEND_LIMIT else "cannot_send_code"
                 )
+            except Exception:
+                _LOGGER.exception("下发验证码出现意外错误")
+                errors["base"] = "unknown"
             else:
                 self._phone = phone
                 return await self.async_step_verify()
@@ -166,6 +176,9 @@ class PolyHomeConfigFlow(ConfigFlow, domain=DOMAIN):
                     if err.code in (CODE_BAD_VERIFY, CODE_EXPIRED_VERIFY)
                     else "cannot_connect_cloud"
                 )
+            except Exception:
+                _LOGGER.exception("验证码登录出现意外错误")
+                errors["base"] = "unknown"
             else:
                 if not account["homes"]:
                     return self.async_abort(reason="no_home")
