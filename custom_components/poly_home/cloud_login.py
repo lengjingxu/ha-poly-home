@@ -101,7 +101,12 @@ def _call(method: str, params: dict[str, Any], session_id: str, token: str = "")
         raise CloudError(payload.get("desc") or "云端返回失败", payload.get("code"))
     data = payload.get("data")
     if isinstance(data, str):
-        return _decrypt(data) if data not in ("", "null") else {}
+        if data in ("", "null"):
+            return {}
+        try:
+            return _decrypt(data)
+        except Exception:
+            return {}
     return data or {}
 
 
